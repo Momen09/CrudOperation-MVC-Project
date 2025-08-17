@@ -44,10 +44,10 @@ namespace SimpleProject.Services.Implementations
                         return $"{location}/{fileName}";
                     }
                 }
-                catch 
-                {
+                catch (Exception ex)
+            {
                     // Log the exception or handle it as needed
-                    return "Error uploading file";
+                    return ex.Message+"--"+ex.InnerException ;
                 }
         }
     }

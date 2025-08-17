@@ -2,7 +2,6 @@
 using SimpleProject.Data;
 using SimpleProject.Models;
 using SimpleProject.Services.Interfaces;
-using System.Threading.Tasks;
 
 namespace SimpleProject.Services.Implementations
 {
@@ -15,7 +14,7 @@ namespace SimpleProject.Services.Implementations
 
 
         #region constructor
-        public ProductService(IFileService fileService,ApplicationDbContext context)
+        public ProductService(IFileService fileService, ApplicationDbContext context)
         {
             _fileService = fileService;
             _context = context;
@@ -24,39 +23,65 @@ namespace SimpleProject.Services.Implementations
 
 
         #region implementation functions
-        public async Task<string> AddProduct(Product product)
+        public async Task<string> AddProduct(Product product, List<IFormFile> files)
         {
             try
             {
-                var products = _context.Product;
-                await products.AddAsync(product);
+                await _context.Product.AddAsync(product);
                 await _context.SaveChangesAsync();
+                if (files != null && files.Count() > 0)
+                {
+                    var pathList = new List<string>();
+                    foreach (var file in files)
+                    {
+                        var path = await _fileService.Upload(file, "/Images/");
+                        if (!path.StartsWith("/Images/"))
+                        {
+                            return path;
+                        }
+                        pathList.Add(path);
+                    }
+
+
+
+                    var productImages = new List<ProductImages>();
+                    foreach (var file in pathList)
+                    {
+                        var productImage = new ProductImages();
+                        productImage.ProductId = product.Id;
+                        productImage.Path = file;
+                        productImages.Add(productImage);
+
+                    }
+                    _context.ProductImages.AddRange(productImages);
+                    await _context.SaveChangesAsync();
+                }
                 return "Success";
             }
-            catch (Exception ex) { 
-            return ex.Message + "--"+ ex.InnerException;
-            }
-
-            
-        }
-
-        public async Task<string> DeleteProduct(Product product)
-        {
-            try 
-            {
-            
-                   string path = product.Path;
-                    _context.Product.Remove(product);
-                    await _context.SaveChangesAsync();
-                _fileService.DeletePhysicalFile(path);
-                return "success";
-            }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return ex.Message + "--" + ex.InnerException;
             }
-            
-           
+        }
+
+
+        public async Task<string> DeleteProduct(Product product)
+        {
+            try
+            {
+
+                //string path = product.Path;
+                _context.Product.Remove(product);
+                await _context.SaveChangesAsync();
+                //_fileService.DeletePhysicalFile(path);
+                return "success";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message + "--" + ex.InnerException;
+            }
+
+
         }
 
         public async Task<Product?> GetProductById(int id)
@@ -71,23 +96,24 @@ namespace SimpleProject.Services.Implementations
 
         public async Task<bool> IsProductNameExistAsync(string ProductName)
         {
-            return await _context.Product.AnyAsync(x =>x.Name == ProductName);
+            return await _context.Product.AnyAsync(x => x.Name == ProductName);
         }
 
         public async Task<string> UpdateProduct(Product product)
         {
-            try 
+            try
             {
-                
-                    _context.Product.Update(product);
-                    await _context.SaveChangesAsync();
-                    return "success";
-                
+
+                _context.Product.Update(product);
+                await _context.SaveChangesAsync();
+                return "success";
+
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return ex.Message + "--" + ex.InnerException;
             }
-            
+
         }
         #endregion  
     }

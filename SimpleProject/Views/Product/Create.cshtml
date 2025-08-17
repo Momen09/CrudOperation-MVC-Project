@@ -1,4 +1,4 @@
-﻿@model Product
+﻿@model AddProductViewModel
 
 <div>
     <form asp-action="Create" method="post" enctype="multipart/form-data">
@@ -18,9 +18,9 @@
             <input type="submit" value="Save" class="btn btn-primary" />
         </div>
         <div>
-            <label asp-for="File">File</label>
-            <input asp-for="File" class="form-control" />
-            <span asp-validation-for="File" class="text-danger"></span>
+            <label asp-for="Files">File</label>
+            <input asp-for="Files" class="form-control" multiple />
+            <span asp-validation-for="Files" class="text-danger"></span>
 
         </div>
         <div>

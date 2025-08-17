@@ -1,7 +1,29 @@
-﻿@model Product
+﻿@model IEnumerable<Category>
 @{
     ViewBag.Title = "Product List";
 }
 
-<h1 class="alert alert-success">Welcome @ViewBag.Title</h1>
-@* <h1>Product name : @Model.Name</h1> *@
+@foreach(var item in Model)
+{
+        <h1>@item.Name</h1>
+                    <div class="row">
+
+        @foreach(var product in item.Products)
+        {
+            <div class="card col-lg-4 col-md-6 col-sm-12">
+                <div class="card-header">
+                    @product.Name
+                </div>
+                <div class="card-body">
+                    @product.Price
+                </div>
+                <div class="card-footer">
+                    <td><a asp-action="Details" asp-controller="Product" asp-route-id="@product.Id" class="btn btn-info">Details</a></td>
+
+                </div>
+            </div>
+            
+    }
+    </div>
+
+}
