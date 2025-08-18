@@ -12,7 +12,5 @@ namespace SimpleProject.Mapping
             //CreateMap<Category, CategoryViewModel>().ReverseMap();
             //CreateMap<ProductImages, ProductImagesViewModel>().ReverseMap();
         }
-    }
-    {
-    }
+    }    
 }
