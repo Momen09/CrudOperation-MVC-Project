@@ -1,9 +1,10 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using SimpleProject.Models;
 using SimpleProject.Services.Interfaces;
-using SimpleProject.ViewModels;
+using SimpleProject.ViewModels.Products;
 
 
 namespace SimpleProject.Controllers
@@ -15,29 +16,44 @@ namespace SimpleProject.Controllers
         private readonly ICategoryService _categoryService;
         private readonly IMapper _mapper;
 
-        public ProductController(IProductService productService, IFileService fileService, ICategoryService categoryService,IMapper mapper )
+        public ProductController(IProductService productService, IFileService fileService, ICategoryService categoryService, IMapper mapper)
         {
             _productService = productService;
             _fileService = fileService;
             _categoryService = categoryService;
             _mapper = mapper;
         }
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search)
         {
-            //return ControllerContext.MyDisplayRouteInfo();
-            var products = await _productService.GetProducts();
+
+            //var products = await _productService.GetProducts();
+            //var result = _mapper.Map<List<GetProductListViewModel>>(products);
+            ViewBag.CurrentSearch = search;
+            var products = _productService.GetProductsAsQueryable(search);
+            var result =await _mapper.ProjectTo<GetProductListViewModel>(products).ToListAsync();
+
             ViewBag.Title = "Product List";
-            return View(products);
+            return View(result);
         }
+
+        public async Task<IActionResult> SearchProductList(string? searchtext)
+        {
+
+            ViewBag.CurrentSearchJQuery = searchtext;
+            var products = _productService.GetProductsAsQueryable(searchtext);
+            var result = await _mapper.ProjectTo<GetProductListViewModel>(products).ToListAsync();
+            return PartialView("_ProductList",result);
+        }
+
         public async Task<IActionResult> Details(int id)
         {
-            var product = await _productService.GetProductById(id);
+            var product = await _productService.GetProductByIdAsync(id);
             return View(product);
         }
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "Name");
+            ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "NameEn");
             return View();
         }
         [HttpPost]
@@ -48,19 +64,14 @@ namespace SimpleProject.Controllers
                 if (ModelState.IsValid)
                 {
                     var product = _mapper.Map<Product>(model);
-
-                    //var product = new Product
-                    //{
-                    //    Name = model.Name,
-                    //    Price = model.Price,
-                    //    CategoryId = model.CategoryId
-                    //};
-                    var result = await _productService.AddProduct(product,model.Files);
+                    var result = await _productService.AddProduct(product, model.Files);
                     if (result != "Success")
                     {
                         ModelState.AddModelError(string.Empty, result);
+                        TempData["Failed"] = result;
                         return View(model);
                     }
+                    TempData["Success"] = "Product created successfully.";
                     return RedirectToAction(nameof(Index));
                 }
                 ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "Name");
@@ -68,8 +79,9 @@ namespace SimpleProject.Controllers
                 return View(model);
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                TempData["Failed"] = ex.Message + "--" + ex.InnerException;
                 ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "Name");
 
                 return View(model);
@@ -78,15 +90,19 @@ namespace SimpleProject.Controllers
         [HttpGet]
         public async Task<IActionResult> Update(int id)
         {
-            var product = await _productService.GetProductById(id);
+
+            var product = await _productService.GetProductByIdAsync(id);
             if (product == null)
             {
                 return NotFound();
             }
-            return View(product);
+            var response = _mapper.Map<UpdateProductViewModel>(product);
+            ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "NameEn");
+
+            return View(response);
         }
         [HttpPost]
-        public async Task<IActionResult> Update(int id, Product model)
+        public async Task<IActionResult> Update(int id, UpdateProductViewModel model)
         {
             try
             {
@@ -96,26 +112,17 @@ namespace SimpleProject.Controllers
                     {
                         return BadRequest("Product ID mismatch.");
                     }
-                    var product = await _productService.GetProductById(id);
+                    var product = await _productService.GetProductByIdWithouIncludeAsync(id);
                     if (product == null) NotFound();
-                    //var path = model.Path;
-                    //if (model.File?.Length > 0)
-                    {
-                        //_fileService.DeletePhysicalFile(path);
-                        //path = await _fileService.Upload(model.File, "/Images/");
-                        //if (path == "Error uploading file")
-                        //{
-                        //    return BadRequest();
-                        //}
-                    }
-                    //product.Path = path;
-                    product.Name = model.Name;
-                    product.Price = model.Price;
 
-                    var result = await _productService.UpdateProduct(product);
-                    if (result != "success")
+
+                    var newProduct = _mapper.Map(model,product);
+
+                    var result = await _productService.UpdateProduct(newProduct,model.Files);
+                    if (result != "Success")
                     {
                         ModelState.AddModelError(string.Empty, result);
+                        ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "NameEn");
                         return View(model);
                     }
                     return RedirectToAction(nameof(Index));
@@ -124,6 +131,8 @@ namespace SimpleProject.Controllers
             }
             catch (Exception)
             {
+                ViewData["Categories"] = new SelectList(await _categoryService.GetCategoriesAsync(), "Id", "NameEn");
+
                 return View(model);
             }
 
@@ -131,7 +140,7 @@ namespace SimpleProject.Controllers
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
-            var product = await _productService.GetProductById(id);
+            var product = await _productService.GetProductByIdWithouIncludeAsync(id);
             if (product == null)
             {
                 return NotFound();
@@ -143,7 +152,7 @@ namespace SimpleProject.Controllers
         {
             try
             {
-                var product = await _productService.GetProductById(id);
+                var product = await _productService.GetProductByIdWithouIncludeAsync(id);
                 if (product == null)
                 {
                     return NotFound();
@@ -158,9 +167,23 @@ namespace SimpleProject.Controllers
 
         }
         [HttpPost]
-        public async Task<IActionResult> IsProductNameExist(string Name)
+        public async Task<IActionResult> IsProductNameArExist(string NameAr)
         {
-            var result = await _productService.IsProductNameExistAsync(Name);
+            var result = await _productService.IsProductNameArExistAsync(NameAr);
+            if (result) return Json(false);
+            return Json(true);
+        }
+        [HttpPost]
+        public async Task<IActionResult> IsProductNameEnExist(string NameEn)
+        {
+            var result = await _productService.IsProductNameArExistAsync(NameEn);
+            if (result) return Json(false);
+            return Json(true);
+        }
+        [HttpPost]
+        public async Task<IActionResult> IsProductNameArExistExcludeItself(string NameAr,int Id)
+        {
+            var result = await _productService.IsProductNameArExistExcludeItselfAsync(NameAr,Id);
             if (result) return Json(false);
             return Json(true);
         }

@@ -29,7 +29,11 @@ namespace SimpleProject.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NameEn")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -49,7 +53,11 @@ namespace SimpleProject.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NameEn")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

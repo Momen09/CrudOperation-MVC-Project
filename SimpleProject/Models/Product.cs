@@ -1,15 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SimpleProject.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SimpleProject.Models
 {
-    public class Product
+    public class Product : LocalizableEntity
     {
         [Key]
         public int Id { get; set; }
         [Required]
-        public string Name { get; set; }
+        public string NameAr { get; set; }
+        public string NameEn { get; set; }
         public decimal Price { get; set; }
 
         [ForeignKey(nameof(Category))]
@@ -17,7 +19,7 @@ namespace SimpleProject.Models
 
         public Category? Category { get; set; }
 
-        public virtual ICollection<ProductImages> ProductImages { get; set; } = new HashSet<ProductImages>();
+        public virtual ICollection<ProductImages> ProductImages { get; set; } =new HashSet<ProductImages>();
 
     }
 }

@@ -1,37 +1,51 @@
-﻿@model IEnumerable<Product>
-@{
-    ViewBag.Title = "Product List";
-}
+﻿@using Microsoft.Extensions.Localization
+@using SimpleProject.Resources
+@using SimpleProject.ViewModels.Products
+@inject IStringLocalizer<SharedResources> _SharedResources;
+@model IEnumerable<GetProductListViewModel>
+
+<partial name="_Notifications"></partial>
 
     <h1 class="text-center">Product List</h1>
-<a asp-action="Create" asp-controller="Product" class="btn btn-primary">Create New Product</a>
-    <table class="table table-striped">
-    <thead>
-        <tr>
-            <td>Id</td>
-            <td>Name</td>
-            <td>Price</td>
-            <td>Image</td>
-            <td>Details</td>
-                <td>edit</td>
-                <td>delete</td>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var product in Model)
-        {
-            <tr>
-                <td>@product.Id</td>
-                <td>@product.Name</td>
-                <td>@product.Price</td>
-                @* <td><img src="@product.Path" alt="NoImage" height="50" width="50"/></td> *@
-                <td><a asp-action="Details" asp-controller="Product" asp-route-id="@product.Id" class="btn btn-info">Details</a></td>
-                <td><a asp-action="Update" asp-controller="Product" asp-route-id="@product.Id" class="btn btn-info">Update</a></td>
-                <td><a asp-action="Delete" asp-controller="Product" asp-route-id="@product.Id" class="btn btn-danger">Delete</a></td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <div >
+    <p>
+        <a asp-action="Create" asp-controller="Product" class="btn btn-primary">Create New Product</a>
+    </p>
+    <div class="d-flex">
+        <div>
+            <form asp-action="Index" method="get">
+                <input id="search" name="search" type="text" placeholder="search ...." value="@ViewBag.CurrentSearch" />
+                <input type="submit" value="search" />
+            </form>
+            <div>
+                <div>
+                    <input id="searchtext"  type="text" placeholder="search using  ...." value="@ViewBag.CurrentSearch" />
+                </div>
+            </div>
+            </div>
+    </div>
+    
+    <div id="productData">
+    @await Html.PartialAsync("_ProductList", Model)
+    </div>
+
+    <script>
+         $(document).ready(function () {
+            $("#searchtext").on('input', function () {
+                var searchString = $(this).val().toLowerCase();
+                $.ajax({
+                   url: '@Url.Action("SearchProductList", "Product")',
+                        type: "GET",
+                          data: {searchText: searchString},
+                            success: function (result) {
+                                $("#productData").html(result);
+                               }
+                })
+                      })
+                         })
+                
+    </script>
+
 
 
     @* @section Scripts{

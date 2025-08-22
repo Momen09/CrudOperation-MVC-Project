@@ -1,14 +1,19 @@
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SimpleProject.Data;
+using SimpleProject.DependencyInjections;
+using SimpleProject.Repositories.implimintation;
+using SimpleProject.Repositories.Interfaces;
+using SimpleProject.Resources;
 using SimpleProject.Services.Implementations;
 using SimpleProject.Services.Interfaces;
+using SimpleProject.SharedRepository;
+using System.Globalization;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//coonect to the database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("dbcontext")));
 
 //builder.Services.AddAuthentication();
 //builder.Services.AddAuthorization();
@@ -17,17 +22,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 //builder.Services.AddSingleton<IProductService,ProductService>();
 
 //create one instance for each request
-builder.Services.AddTransient<IProductService, ProductService>();
-builder.Services.AddTransient<IFileService, FileService>();
-builder.Services.AddTransient<ICategoryService, CategoryService>();
-
-//create a new instance for each injection
-//builder.Services.AddTransient<IProductService, ProductService>();
-
-builder.Services.AddControllersWithViews();
+#region register DependencyInjections
+builder.Services.AddServiceDependencyInjection().
+    AddRepositoryDependencyInjection().
+    AddLocalizationDependencyInjection().
+    AddGeneralDependencyInjection(builder.Configuration);
+#endregion
 
 
-builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+
+
+
+
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -39,11 +47,14 @@ else
     app.UseExceptionHandler("/home/error");
 }
 
+app.UseApplicationBuilderDependencyInjection(app.Services);
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseSession();
 
 //app.MapDefaultControllerRoute();
 
